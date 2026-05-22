@@ -1,12 +1,33 @@
 {
   "name": "speed-reader",
-  "private": true,
-  "version": "0.0.0",
+  "version": "1.1.0",
+  "description": "Browser-based ORP/pivot speed reader for txt and PDF files. Local-first, keyboard-driven, no account.",
+  "license": "MIT",
+  "author": "Speed Reader Contributors",
   "type": "module",
+  "homepage": "https://github.com/Vishwa-docs/speed-reader#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vishwa-docs/speed-reader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Vishwa-docs/speed-reader/issues"
+  },
+  "keywords": [
+    "speed-reading",
+    "rsvp",
+    "orp",
+    "pivot",
+    "pdf",
+    "react",
+    "vite",
+    "reader"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -6,6 +6,7 @@ interface HighlightsPanelProps {
   onClose: () => void;
   onJumpToHighlight: (tokenIndex: number) => void;
   onDeleteHighlight: (id: string) => void;
+  onExport?: () => void;
 }
 
 export function HighlightsPanel({
@@ -13,7 +14,8 @@ export function HighlightsPanel({
   isOpen,
   onClose,
   onJumpToHighlight,
-  onDeleteHighlight
+  onDeleteHighlight,
+  onExport
 }: HighlightsPanelProps) {
   return (
     <aside className={isOpen ? 'highlights-panel highlights-panel--open' : 'highlights-panel'} aria-label="Highlights">
@@ -22,9 +24,16 @@ export function HighlightsPanel({
           <p className="reader-shell__eyebrow">Saved points</p>
           <strong>Highlights</strong>
         </div>
-        <button className="ghost-button" type="button" onClick={onClose}>
-          Close
-        </button>
+        <div className="highlights-panel__header-actions">
+          {onExport && highlights.length > 0 ? (
+            <button className="ghost-button" type="button" onClick={onExport}>
+              Export .md
+            </button>
+          ) : null}
+          <button className="ghost-button" type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
       </div>
 
       {highlights.length === 0 ? (

@@ -475,6 +475,92 @@ select {
   gap: 1rem;
 }
 
+.highlights-panel__header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.help-overlay__panel {
+  width: min(38rem, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 1.25rem;
+  background: rgba(10, 10, 10, 0.96);
+  display: grid;
+  gap: 1.25rem;
+}
+
+.help-overlay__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+
+.help-overlay__section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-red);
+}
+
+.help-overlay__section p,
+.help-overlay__section li {
+  margin: 0 0 0.5rem;
+  color: var(--muted-copy);
+  line-height: 1.55;
+}
+
+.help-overlay__section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.help-overlay__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.help-overlay__table td {
+  padding: 0.35rem 0.6rem 0.35rem 0;
+  color: var(--muted-copy);
+  vertical-align: top;
+}
+
+.help-overlay__table td:first-child {
+  white-space: nowrap;
+  width: 7.5rem;
+}
+
+.help-overlay kbd,
+.reader-shell__hotkeys kbd,
+.highlights-panel kbd {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.82rem;
+  color: var(--warm-white);
+  font-family: inherit;
+}
+
 .highlights-panel__empty {
   margin: 0;
   color: var(--muted-copy);

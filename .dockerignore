@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.github
+.vscode
+.idea
+.DS_Store
+coverage
+*.tsbuildinfo
+.vite
+Launch Speed Reader.command
+FUTURE_PLANS.md
+CHANGELOG.md
+CONTRIBUTING.md
+SECURITY.md

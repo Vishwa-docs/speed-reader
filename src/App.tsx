@@ -1,11 +1,14 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { FocusAudioPanel, type FocusStation } from './components/FocusAudioPanel';
+import { HelpOverlay } from './components/HelpOverlay';
 import { HighlightsPanel } from './components/HighlightsPanel';
 import { ReaderControls } from './components/ReaderControls';
 import { ReaderLane } from './components/ReaderLane';
 import { UploadStage } from './components/UploadStage';
+import { downloadMarkdown, highlightsToMarkdown, suggestedHighlightsFilename } from './lib/exportHighlights';
 import { deleteHighlight, listHighlights, saveHighlight } from './lib/highlightsDb';
 import { parseFile } from './lib/fileParser';
+import { loadProgress, saveProgress } from './lib/progressDb';
 import { buildHighlightContext, getTokenDurationMs } from './lib/readerCore';
 import type { ParsedDocument, SavedHighlight } from './lib/types';
 
@@ -42,6 +45,7 @@ export default function App() {
   const [isReaderMode, setIsReaderMode] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHighlightsOpen, setIsHighlightsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [wordsPerMinute, setWordsPerMinute] = useState<number>(500);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -146,8 +150,14 @@ export default function App() {
         setIsMusicPlaying((value) => !value);
       }
 
+      if (event.key === '?' || (event.shiftKey && event.key === '/')) {
+        event.preventDefault();
+        setIsHelpOpen((value) => !value);
+      }
+
       if (event.key === 'Escape') {
         setIsHighlightsOpen(false);
+        setIsHelpOpen(false);
       }
     };
 
@@ -172,6 +182,11 @@ export default function App() {
     return () => window.clearTimeout(timeoutId);
   }, [currentIndex, document, isPlaying, wordsPerMinute]);
 
+  useEffect(() => {
+    if (!document) return;
+    saveProgress(document.documentId, currentIndex);
+  }, [document, currentIndex]);
+
   const handleFileSelect = async (file: File) => {
     setIsLoading(true);
     setError(null);
@@ -183,9 +198,12 @@ export default function App() {
         throw new Error('This file did not contain readable words for the speed reader.');
       }
 
+      const resumed = loadProgress(parsed.documentId);
+      const startIndex = resumed != null && resumed > 0 && resumed < parsed.tokens.length ? resumed : 0;
+
       startTransition(() => {
         setDocument(parsed);
-        setCurrentIndex(0);
+        setCurrentIndex(startIndex);
         setHighlights([]);
         setIsPlaying(false);
         setIsReaderMode(false);
@@ -210,7 +228,6 @@ export default function App() {
       return;
     }
 
-    setCurrentIndex(0);
     setIsReaderMode(true);
     setIsPlaying(true);
   };
@@ -252,6 +269,12 @@ export default function App() {
   const handleDeleteHighlight = async (id: string) => {
     await deleteHighlight(id);
     setHighlights((existingHighlights) => existingHighlights.filter((highlight) => highlight.id !== id));
+  };
+
+  const handleExportHighlights = () => {
+    if (!document || highlights.length === 0) return;
+    const markdown = highlightsToMarkdown(document.sourceName, highlights);
+    downloadMarkdown(suggestedHighlightsFilename(document.sourceName), markdown);
   };
 
   function stepIndex(delta: number) {
@@ -317,7 +340,10 @@ export default function App() {
         onDeleteHighlight={(id) => {
           void handleDeleteHighlight(id);
         }}
+        onExport={handleExportHighlights}
       />
+
+      <HelpOverlay isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </main>
   ) : (
     <UploadStage
