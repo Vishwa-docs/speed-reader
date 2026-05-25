@@ -62,6 +62,18 @@ export function FocusAudioPanel({
           />
         </label>
       </div>
+
+      <p className="focus-audio__attribution">
+        Streams courtesy of{' '}
+        <a href="https://somafm.com/" target="_blank" rel="noopener noreferrer">
+          SomaFM
+        </a>
+        {' '}— commercial-free, listener-supported radio.{' '}
+        <a href="https://somafm.com/support/" target="_blank" rel="noopener noreferrer">
+          Please donate
+        </a>
+        .
+      </p>
     </section>
   );
 }

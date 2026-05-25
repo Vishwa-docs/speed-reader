@@ -101,6 +101,16 @@ PRs welcome. See [`CONTRIBUTING.md`](./CONTRIBUTING.md). The codebase is small, 
 2. In your repo: **Settings → Pages → Source → GitHub Actions**. The included `deploy.yml` will publish on every push to `main`.
 3. The published URL is `https://<owner>.github.io/speed-reader/`. The build automatically rewrites asset paths using the repo name.
 
+## Credits
+
+This project stands on the shoulders of:
+
+- **[pdfjs-dist](https://github.com/mozilla/pdf.js)** (Apache 2.0) — PDF text extraction in the browser, by Mozilla.
+- **[React](https://react.dev/)**, **[Vite](https://vitejs.dev/)**, **[TypeScript](https://www.typescriptlang.org/)**, **[Vitest](https://vitest.dev/)**, and **[Testing Library](https://testing-library.com/)** — all MIT-licensed.
+- **[SomaFM](https://somafm.com/)** — commercial-free, listener-supported internet radio. The three ambient stations in the focus-audio panel stream directly from SomaFM. If you use them, please [donate to SomaFM](https://somafm.com/support/) — they keep the lights on through listener support.
+
+The ORP / word-pivot reading technique itself is decades-old prior art (Forster, 1970; later popularized by RSVP research and various commercial implementations).
+
 ## License
 
 [MIT](./LICENSE) © Speed Reader Contributors

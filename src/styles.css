@@ -423,6 +423,22 @@ select {
   flex-wrap: wrap;
 }
 
+.focus-audio__attribution {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted-copy);
+  opacity: 0.85;
+}
+
+.focus-audio__attribution a {
+  color: var(--accent-red);
+  text-decoration: none;
+}
+
+.focus-audio__attribution a:hover {
+  text-decoration: underline;
+}
+
 .focus-audio__label {
   display: grid;
   gap: 0.35rem;
