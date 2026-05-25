@@ -5,6 +5,14 @@ A keyboard-driven, local-first speed reader for `.txt` and PDF files. Words flas
 **[Try the live demo →](https://vishwa-docs.github.io/speed-reader/)** *(enable GitHub Pages in repo settings once after first push)*
 
 ---
+# Demo
+
+
+https://github.com/user-attachments/assets/7c241703-e1a1-4801-9e4d-6cd33e03210a
+
+
+
+---
 
 ## What it is
 
