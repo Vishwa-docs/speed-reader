@@ -76,6 +76,65 @@ describe('App', () => {
       expect(card).toHaveTextContent('this point for context review.');
     });
   });
+
+  it('falls back to local ambient audio when the radio stream cannot play', async () => {
+    const user = userEvent.setup();
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockRejectedValueOnce(new DOMException('Unsupported source', 'NotSupportedError'))
+      .mockResolvedValueOnce();
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+    Object.defineProperties(URL, {
+      createObjectURL: { configurable: true, value: vi.fn(() => 'blob:focus-audio') },
+      revokeObjectURL: { configurable: true, value: vi.fn() }
+    });
+
+    render(<App />);
+    await user.upload(screen.getByLabelText(/upload a txt or pdf/i), makeTextFile('Read faster now.'));
+    await screen.findByText(/sample.txt loaded/i);
+    await user.click(screen.getByRole('button', { name: /start reading/i }));
+    await user.click(screen.getByRole('button', { name: /play music/i }));
+
+    await waitFor(() => {
+      expect(play).toHaveBeenCalledTimes(2);
+      expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+      expect(screen.getByRole('status')).toHaveTextContent(/local ambient fallback/i);
+    });
+
+    expect(document.querySelector('audio')).toHaveAttribute('src', 'blob:focus-audio');
+  });
+
+  it('falls back to local ambient audio when the radio stream stalls', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockReturnValueOnce(new Promise<void>(() => undefined))
+      .mockResolvedValueOnce();
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+    Object.defineProperties(URL, {
+      createObjectURL: { configurable: true, value: vi.fn(() => 'blob:focus-audio') },
+      revokeObjectURL: { configurable: true, value: vi.fn() }
+    });
+
+    try {
+      render(<App />);
+      await user.upload(screen.getByLabelText(/upload a txt or pdf/i), makeTextFile('Read faster now.'));
+      await screen.findByText(/sample.txt loaded/i);
+      await user.click(screen.getByRole('button', { name: /start reading/i }));
+      await user.click(screen.getByRole('button', { name: /play music/i }));
+
+      expect(play).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(8000);
+
+      await waitFor(() => {
+        expect(play).toHaveBeenCalledTimes(2);
+        expect(screen.getByRole('status')).toHaveTextContent(/local ambient fallback/i);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 function makeTextFile(contents: string) {

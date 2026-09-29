@@ -10,6 +10,7 @@ interface FocusAudioPanelProps {
   currentStationId: string;
   isPlaying: boolean;
   volume: number;
+  playbackStatus: string | null;
   onStationChange: (stationId: string) => void;
   onTogglePlayback: () => void;
   onVolumeChange: (volume: number) => void;
@@ -20,6 +21,7 @@ export function FocusAudioPanel({
   currentStationId,
   isPlaying,
   volume,
+  playbackStatus,
   onStationChange,
   onTogglePlayback,
   onVolumeChange
@@ -62,6 +64,12 @@ export function FocusAudioPanel({
           />
         </label>
       </div>
+
+      {playbackStatus ? (
+        <p className="focus-audio__description" role="status">
+          {playbackStatus}
+        </p>
+      ) : null}
 
       <p className="focus-audio__attribution">
         Streams courtesy of{' '}

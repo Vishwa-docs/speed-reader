@@ -6,6 +6,7 @@ import { ReaderControls } from './components/ReaderControls';
 import { ReaderLane } from './components/ReaderLane';
 import { UploadStage } from './components/UploadStage';
 import { downloadMarkdown, highlightsToMarkdown, suggestedHighlightsFilename } from './lib/exportHighlights';
+import { createFocusFallbackUrl } from './lib/focusAudio';
 import { deleteHighlight, listHighlights, saveHighlight } from './lib/highlightsDb';
 import { parseFile } from './lib/fileParser';
 import { loadProgress, saveProgress } from './lib/progressDb';
@@ -15,29 +16,33 @@ import type { ParsedDocument, SavedHighlight } from './lib/types';
 const PRESETS = [300, 500, 700, 900] as const;
 const MIN_WPM = 150;
 const MAX_WPM = 1200;
+const STREAM_START_TIMEOUT_MS = 8000;
+
 const FOCUS_STATIONS: readonly FocusStation[] = [
   {
     id: 'groove-salad',
     label: 'Groove Salad',
     description: 'A gentle ambient station for deep work and steady attention.',
-    streamUrl: 'https://ice5.somafm.com/groovesalad-128-mp3'
+    streamUrl: 'https://ice6.somafm.com/groovesalad-128-mp3'
   },
   {
     id: 'groove-salad-classic',
     label: 'Groove Salad Classic',
     description: 'Softer classic ambient textures when you want less movement.',
-    streamUrl: 'https://ice5.somafm.com/gsclassic-128-mp3'
+    streamUrl: 'https://ice6.somafm.com/gsclassic-128-mp3'
   },
   {
     id: 'drone-zone',
     label: 'Drone Zone',
     description: 'Minimal atmospheric space for the calmest reading sessions.',
-    streamUrl: 'https://ice5.somafm.com/dronezone-128-mp3'
+    streamUrl: 'https://ice6.somafm.com/dronezone-128-mp3'
   }
 ];
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fallbackAudioUrlRef = useRef<string | null>(null);
+  const playAttemptRef = useRef(0);
   const [document, setDocument] = useState<ParsedDocument | null>(null);
   const [highlights, setHighlights] = useState<SavedHighlight[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +56,7 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [musicStationId, setMusicStationId] = useState<string>(FOCUS_STATIONS[0].id);
   const [musicVolume, setMusicVolume] = useState<number>(0.35);
+  const [musicPlaybackStatus, setMusicPlaybackStatus] = useState<string | null>(null);
 
   const currentToken = document?.tokens[currentIndex] ?? null;
   const currentStation = useMemo(
@@ -85,25 +91,13 @@ export default function App() {
     }
 
     audio.volume = musicVolume;
-  }, [musicVolume]);
+  }, [musicVolume, isReaderMode, document]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-
-    if (!audio) {
-      return;
+  useEffect(() => () => {
+    if (fallbackAudioUrlRef.current) {
+      URL.revokeObjectURL(fallbackAudioUrlRef.current);
     }
-
-    if (isMusicPlaying) {
-      audio
-        .play()
-        .catch(() => {
-          setIsMusicPlaying(false);
-        });
-    } else {
-      audio.pause();
-    }
-  }, [isMusicPlaying, musicStationId]);
+  }, []);
 
   useEffect(() => {
     if (!document || !isReaderMode) {
@@ -147,7 +141,7 @@ export default function App() {
 
       if (lowerKey === 'm') {
         event.preventDefault();
-        setIsMusicPlaying((value) => !value);
+        handleToggleMusicPlayback();
       }
 
       if (event.key === '?' || (event.shiftKey && event.key === '/')) {
@@ -163,7 +157,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [document, isReaderMode, currentIndex, currentToken]);
+  }, [document, isReaderMode, currentIndex, currentToken, musicStationId]);
 
   useEffect(() => {
     if (!document || !isPlaying) {
@@ -286,9 +280,69 @@ export default function App() {
     setIsPlaying(false);
   }
 
+  function handleMusicStationChange(stationId: string) {
+    const audio = audioRef.current;
+
+    playAttemptRef.current += 1;
+    audio?.pause();
+    if (audio) {
+      audio.loop = false;
+    }
+
+    if (fallbackAudioUrlRef.current) {
+      URL.revokeObjectURL(fallbackAudioUrlRef.current);
+      fallbackAudioUrlRef.current = null;
+    }
+
+    setMusicStationId(stationId);
+    setIsMusicPlaying(false);
+    setMusicPlaybackStatus(null);
+  }
+
+  function handleToggleMusicPlayback() {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (!audio.paused) {
+      playAttemptRef.current += 1;
+      audio.pause();
+      setIsMusicPlaying(false);
+      return;
+    }
+
+    setMusicPlaybackStatus(null);
+    const attempt = ++playAttemptRef.current;
+    void startWithTimeout(audio).catch(async () => {
+      if (attempt !== playAttemptRef.current) {
+        return;
+      }
+
+      const fallbackUrl = fallbackAudioUrlRef.current ?? createFocusFallbackUrl(musicStationId);
+      fallbackAudioUrlRef.current = fallbackUrl;
+      audio.src = fallbackUrl;
+      audio.loop = true;
+
+      try {
+        await audio.play();
+        setMusicPlaybackStatus('Using a local ambient fallback because the radio stream is unavailable.');
+      } catch {
+        setMusicPlaybackStatus('Audio could not start. Check this site’s sound permissions and try again.');
+      }
+    });
+  }
+
   return isReaderMode && document && currentToken ? (
     <main className="reader-shell">
-      <audio ref={audioRef} src={currentStation.streamUrl} preload="none" />
+      <audio
+        ref={audioRef}
+        src={currentStation.streamUrl}
+        preload="none"
+        onPlaying={() => setIsMusicPlaying(true)}
+        onPause={() => setIsMusicPlaying(false)}
+      />
       <div className="reader-shell__noise" aria-hidden="true" />
       <div className="reader-shell__top-dock">
         <FocusAudioPanel
@@ -296,8 +350,9 @@ export default function App() {
           currentStationId={musicStationId}
           isPlaying={isMusicPlaying}
           volume={musicVolume}
-          onStationChange={setMusicStationId}
-          onTogglePlayback={() => setIsMusicPlaying((value) => !value)}
+          playbackStatus={musicPlaybackStatus}
+          onStationChange={handleMusicStationChange}
+          onTogglePlayback={handleToggleMusicPlayback}
           onVolumeChange={setMusicVolume}
         />
       </div>
@@ -358,6 +413,23 @@ export default function App() {
       onStart={handleStart}
     />
   );
+}
+
+function startWithTimeout(audio: HTMLAudioElement) {
+  return new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      audio.pause();
+      reject(new Error('Stream stalled'));
+    }, STREAM_START_TIMEOUT_MS);
+
+    audio.play().then(() => {
+      window.clearTimeout(timeout);
+      resolve();
+    }, (error: unknown) => {
+      window.clearTimeout(timeout);
+      reject(error);
+    });
+  });
 }
 
 function clamp(value: number, minimum: number, maximum: number) {
